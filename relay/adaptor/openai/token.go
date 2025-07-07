@@ -42,6 +42,9 @@ func InitTokenEncoders() {
 			tokenEncoderMap[model] = gpt4oTokenEncoder
 		} else if strings.HasPrefix(model, "gpt-4") {
 			tokenEncoderMap[model] = gpt4TokenEncoder
+		} else if strings.HasPrefix(model, "claude") {
+			// Use gpt-3.5-turbo encoder for Claude models (approximate)
+			tokenEncoderMap[model] = gpt35TokenEncoder
 		} else {
 			tokenEncoderMap[model] = nil
 		}
