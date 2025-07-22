@@ -2,6 +2,8 @@ services:
   one-api:
     build:
       context: .
+      args:
+        REGISTRY: ${REGISTRY:-docker.io}
     container_name: one-api
     restart: always
     ports:
