@@ -1,12 +1,13 @@
 ARG REGISTRY=docker.io
-FROM --platform=$BUILDPLATFORM ${REGISTRY}/node:18 AS builder
+FROM --platform=$BUILDPLATFORM ${REGISTRY}/node:16 AS builder
 
 WORKDIR /web
 COPY ./VERSION .
 COPY ./web .
 
-# 清理npm缓存并安装依赖
-RUN npm cache clean --force && \
+# 配置npm镜像源并安装依赖
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm cache clean --force && \
     cd /web/default && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && \
     cd /web/berry && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && \
     cd /web/air && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps
@@ -23,6 +24,9 @@ RUN cd /web/air && npm audit fix --force || true && DISABLE_ESLINT_PLUGIN='true'
 RUN ls -la /web/build/
 
 FROM ${REGISTRY}/golang:alpine AS builder2
+
+# 配置Alpine镜像源加速下载
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 RUN apk add --no-cache \
     gcc \
@@ -45,6 +49,9 @@ COPY --from=builder /web/build ./web/build
 RUN go build -trimpath -ldflags "-s -w -X 'github.com/songquanpeng/one-api/common.Version=$(cat VERSION)' -linkmode external -extldflags '-static'" -o one-api
 
 FROM ${REGISTRY}/alpine:latest
+
+# 配置Alpine镜像源加速下载
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 RUN apk add --no-cache ca-certificates tzdata
 
