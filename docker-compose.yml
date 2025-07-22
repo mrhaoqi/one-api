@@ -5,7 +5,7 @@ services:
     container_name: one-api
     restart: always
     ports:
-      - "3003:3000"
+      - "3004:3000"
     volumes:
       - ./data/oneapi:/data
       - ./logs:/app/logs
