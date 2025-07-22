@@ -1,22 +1,23 @@
 ARG REGISTRY=docker.io
-FROM --platform=$BUILDPLATFORM ${REGISTRY}/node:16 AS builder
+FROM --platform=$BUILDPLATFORM ${REGISTRY}/node:18 AS builder
 
 WORKDIR /web
 COPY ./VERSION .
 COPY ./web .
 
-RUN npm install --legacy-peer-deps --prefix /web/default & \
-    npm install --legacy-peer-deps --prefix /web/berry & \
-    npm install --legacy-peer-deps --prefix /web/air & \
-    wait
+# 清理npm缓存并安装依赖
+RUN npm cache clean --force && \
+    cd /web/default && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && \
+    cd /web/berry && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps && \
+    cd /web/air && rm -rf node_modules package-lock.json && npm install --legacy-peer-deps
 
 # 创建build目录
 RUN mkdir -p /web/build
 
 # 构建前端项目
-RUN cd /web/default && DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat ../VERSION) npm run build
-RUN cd /web/berry && DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat ../VERSION) npm run build
-RUN cd /web/air && DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat ../VERSION) npm run build
+RUN cd /web/default && npm audit fix --force || true && DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat ../VERSION) npm run build
+RUN cd /web/berry && npm audit fix --force || true && DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat ../VERSION) npm run build
+RUN cd /web/air && npm audit fix --force || true && DISABLE_ESLINT_PLUGIN='true' REACT_APP_VERSION=$(cat ../VERSION) npm run build
 
 # 验证构建结果
 RUN ls -la /web/build/
